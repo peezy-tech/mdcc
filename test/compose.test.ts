@@ -87,7 +87,7 @@ test("parseSnippet rejects malformed and unknown metadata", () => {
 })
 
 test("composeFiles reads source files", async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "mdcc-compose-"))
+  const root = await mkdtemp(path.join(os.tmpdir(), "mdcsp-compose-"))
   try {
     const first = path.join(root, "first.md")
     const second = path.join(root, "second.md")
@@ -103,7 +103,7 @@ test("composeFiles reads source files", async () => {
 })
 
 test("commandAvailableOnPath checks executable regular files without a shell", async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "mdcc-path-"))
+  const root = await mkdtemp(path.join(os.tmpdir(), "mdcsp-path-"))
   try {
     await mkdir(path.join(root, "directory-command"))
     const executable = path.join(root, process.platform === "win32" ? "available.cmd" : "available")

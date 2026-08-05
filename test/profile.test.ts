@@ -44,19 +44,19 @@ test("profiles reject traversal, duplicates, and escaping symlinks", {
   })
 })
 
-test("defaultConfigRoot honors MDCC_HOME before XDG_CONFIG_HOME", () => {
+test("defaultConfigRoot honors MDCSP_HOME before XDG_CONFIG_HOME", () => {
   assert.equal(
-    defaultConfigRoot({ MDCC_HOME: path.join(os.tmpdir(), "custom"), XDG_CONFIG_HOME: path.join(os.tmpdir(), "xdg") }),
+    defaultConfigRoot({ MDCSP_HOME: path.join(os.tmpdir(), "custom"), XDG_CONFIG_HOME: path.join(os.tmpdir(), "xdg") }),
     path.resolve(os.tmpdir(), "custom"),
   )
   assert.equal(
     defaultConfigRoot({ XDG_CONFIG_HOME: path.join(os.tmpdir(), "xdg") }),
-    path.resolve(os.tmpdir(), "xdg", "mdcc"),
+    path.resolve(os.tmpdir(), "xdg", "mdcsp"),
   )
 })
 
 async function withRoot(run: (root: string) => Promise<void>): Promise<void> {
-  const root = await mkdtemp(path.join(os.tmpdir(), "mdcc-profile-"))
+  const root = await mkdtemp(path.join(os.tmpdir(), "mdcsp-profile-"))
   try {
     await run(root)
   } finally {

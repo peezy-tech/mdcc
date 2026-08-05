@@ -13,9 +13,9 @@ export interface ProfilePaths {
 }
 
 export function defaultConfigRoot(env: NodeJS.ProcessEnv = process.env): string {
-  if (env.MDCC_HOME) return path.resolve(expandHome(env.MDCC_HOME))
+  if (env.MDCSP_HOME) return path.resolve(expandHome(env.MDCSP_HOME))
   const config = env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config")
-  return path.resolve(config, "mdcc")
+  return path.resolve(config, "mdcsp")
 }
 
 export async function listProfiles(root: string): Promise<readonly string[]> {

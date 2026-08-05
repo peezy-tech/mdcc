@@ -24,7 +24,7 @@ export async function writeOutput(target: string, content: string): Promise<void
   } catch (error) {
     if (!hasCode(error, "ENOENT")) throw error
   }
-  const temporary = path.join(path.dirname(resolved), `.${path.basename(resolved)}.mdcc-${randomUUID()}`)
+  const temporary = path.join(path.dirname(resolved), `.${path.basename(resolved)}.mdcsp-${randomUUID()}`)
   const handle = await open(temporary, "wx", mode)
   try {
     await handle.writeFile(content, "utf8")

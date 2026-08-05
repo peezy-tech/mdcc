@@ -1,6 +1,6 @@
-# mdcc
+# mdcsp
 
-`mdcc` composes Markdown context files from reusable snippets. It can generate
+`mdcsp` composes Markdown context files from reusable snippets. It can generate
 `AGENTS.md`, `CLAUDE.md`, or any other Markdown file, and it is available as both
 a JavaScript library and a command-line tool.
 
@@ -25,7 +25,7 @@ joined in profile order with one blank line between them.
 ## Library
 
 ```js
-import { composeFiles } from "mdcc"
+import { composeFiles } from "mdcsp"
 
 const result = await composeFiles({
   paths: ["./snippets/common.md", "./snippets/jaeger.md"],
@@ -40,7 +40,7 @@ console.log(result.decisions)
 For callers that already hold snippet content, use `compose`:
 
 ```js
-import { compose } from "mdcc"
+import { compose } from "mdcsp"
 
 const result = compose({
   snippets: [
@@ -59,7 +59,7 @@ files or assume a particular harness.
 Install the package, then create this layout:
 
 ```text
-~/.config/mdcc/
+~/.config/mdcsp/
 ├── profiles/
 │   └── default.toml
 └── snippets/
@@ -78,22 +78,22 @@ snippets = ["common", "jaeger"]
 Render, inspect, or check the result:
 
 ```bash
-mdcc list profiles
-mdcc list snippets
-mdcc explain default
-mdcc render default --stdout
-mdcc render default --target ~/.codex/AGENTS.md
-mdcc check default --target ~/.codex/AGENTS.md
+mdcsp list profiles
+mdcsp list snippets
+mdcsp explain default
+mdcsp render default --stdout
+mdcsp render default --target ~/.codex/AGENTS.md
+mdcsp check default --target ~/.codex/AGENTS.md
 ```
 
-The default root is `$MDCC_HOME`, then `$XDG_CONFIG_HOME/mdcc`, then
-`~/.config/mdcc`. The default profile is `default`, and the default output is
+The default root is `$MDCSP_HOME`, then `$XDG_CONFIG_HOME/mdcsp`, then
+`~/.config/mdcsp`. The default profile is `default`, and the default output is
 `~/.codex/AGENTS.md`. Use `--root`, `--file`, or `--target` for explicit paths.
 `render` writes atomically and preserves an existing target's file mode.
 
 ## Security boundary
 
-`mdcc` treats Markdown as data and never executes snippet bodies. Command
+`mdcsp` treats Markdown as data and never executes snippet bodies. Command
 conditions perform direct executable-file checks against `PATH`; they do not
 invoke a shell. Named CLI profiles can reference only simple snippet names
 inside the configured `snippets/` directory, and resolved paths cannot escape
@@ -108,4 +108,4 @@ pnpm verify
 
 The verifier type-checks and tests the source, builds it, packs the npm artifact,
 installs that artifact into a temporary project, and exercises both the library
-and the installed `mdcc` command.
+and the installed `mdcsp` command.

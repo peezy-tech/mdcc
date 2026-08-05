@@ -6,7 +6,7 @@ import test from "node:test"
 import { outputIsCurrent, writeOutput } from "../src/output.js"
 
 test("writeOutput writes atomically and preserves an existing mode", async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "mdcc-output-"))
+  const root = await mkdtemp(path.join(os.tmpdir(), "mdcsp-output-"))
   try {
     const target = path.join(root, "nested", "AGENTS.md")
     assert.equal(await outputIsCurrent(target, "first\n"), false)
@@ -24,7 +24,7 @@ test("writeOutput writes atomically and preserves an existing mode", async () =>
 test("writeOutput refuses a symlink target", {
   skip: process.platform === "win32" ? "file symlink creation requires elevated Windows privileges" : false,
 }, async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "mdcc-output-link-"))
+  const root = await mkdtemp(path.join(os.tmpdir(), "mdcsp-output-link-"))
   try {
     const actual = path.join(root, "actual.md")
     const target = path.join(root, "target.md")
