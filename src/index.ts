@@ -1,0 +1,24 @@
+export {
+  commandAvailableOnPath,
+  compose,
+  composeFiles,
+  parseSnippet,
+  type CommandAvailability,
+  type ComposeFilesOptions,
+  type ComposeOptions,
+  type CompositionResult,
+  type CompositionSummary,
+  type HeaderFactory,
+  type MarkdownSnippetInput,
+  type ParsedMarkdownSnippet,
+  type SnippetDecision,
+} from "./compose.js"
+export {
+  defaultConfigRoot,
+  listProfiles,
+  listSnippets,
+  loadProfile,
+  validateProfileName,
+  type ProfilePaths,
+} from "./profile.js"
+export { outputIsCurrent, writeOutput } from "./output.js"
