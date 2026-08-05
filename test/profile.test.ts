@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import test from "node:test"
@@ -18,8 +18,8 @@ test("profiles resolve ordered snippets and list valid entries", async () => {
     const profile = await loadProfile(root, "default")
     assert.equal(profile.profilePath, path.join(root, "profiles", "default.toml"))
     assert.deepEqual(profile.snippetPaths, [
-      path.join(root, "snippets", "common.md"),
-      path.join(root, "snippets", "jaeger.md"),
+      await realpath(path.join(root, "snippets", "common.md")),
+      await realpath(path.join(root, "snippets", "jaeger.md")),
     ])
   })
 })
@@ -45,8 +45,14 @@ test("profiles reject traversal, duplicates, and escaping symlinks", {
 })
 
 test("defaultConfigRoot honors MDCC_HOME before XDG_CONFIG_HOME", () => {
-  assert.equal(defaultConfigRoot({ MDCC_HOME: "/tmp/custom", XDG_CONFIG_HOME: "/tmp/xdg" }), "/tmp/custom")
-  assert.equal(defaultConfigRoot({ XDG_CONFIG_HOME: "/tmp/xdg" }), "/tmp/xdg/mdcc")
+  assert.equal(
+    defaultConfigRoot({ MDCC_HOME: path.join(os.tmpdir(), "custom"), XDG_CONFIG_HOME: path.join(os.tmpdir(), "xdg") }),
+    path.resolve(os.tmpdir(), "custom"),
+  )
+  assert.equal(
+    defaultConfigRoot({ XDG_CONFIG_HOME: path.join(os.tmpdir(), "xdg") }),
+    path.resolve(os.tmpdir(), "xdg", "mdcc"),
+  )
 })
 
 async function withRoot(run: (root: string) => Promise<void>): Promise<void> {

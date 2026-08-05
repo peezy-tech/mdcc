@@ -106,9 +106,9 @@ test("commandAvailableOnPath checks executable regular files without a shell", a
   const root = await mkdtemp(path.join(os.tmpdir(), "mdcc-path-"))
   try {
     await mkdir(path.join(root, "directory-command"))
-    const executable = path.join(root, "available")
+    const executable = path.join(root, process.platform === "win32" ? "available.cmd" : "available")
     await writeFile(executable, "#!/bin/sh\n", { mode: 0o700 })
-    assert.equal(commandAvailableOnPath("available", { PATH: root }), true)
+    assert.equal(commandAvailableOnPath("available", { PATH: root, PATHEXT: ".COM;.EXE;.BAT;.CMD" }), true)
     assert.equal(commandAvailableOnPath("directory-command", { PATH: root }), false)
     assert.equal(commandAvailableOnPath("missing", { PATH: root }), false)
     assert.throws(() => commandAvailableOnPath("bad command", { PATH: root }), /Invalid command name/)

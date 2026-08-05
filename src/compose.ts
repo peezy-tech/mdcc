@@ -141,17 +141,35 @@ export function commandAvailableOnPath(
 ): boolean {
   validateCommand(command)
   const pathValue = env.PATH ?? ""
+  const extensions = commandExtensions(command, env)
   return pathValue.split(path.delimiter).some((directory) => {
     if (!directory) return false
-    try {
-      const candidate = path.join(directory, command)
-      accessSync(candidate, constants.X_OK)
-      const value = statSync(candidate)
-      return value.isFile() && (value.mode & 0o111) !== 0
-    } catch {
-      return false
+    for (const extension of extensions) {
+      try {
+        const candidate = path.join(directory, `${command}${extension}`)
+        accessSync(candidate, process.platform === "win32" ? constants.F_OK : constants.X_OK)
+        const value = statSync(candidate)
+        if (value.isFile() && (process.platform === "win32" || (value.mode & 0o111) !== 0)) {
+          return true
+        }
+      } catch {
+        // Try the next platform executable extension or PATH directory.
+      }
     }
+    return false
   })
+}
+
+function commandExtensions(command: string, env: NodeJS.ProcessEnv): readonly string[] {
+  if (process.platform !== "win32") return [""]
+  const configured = (env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD")
+    .split(";")
+    .map((extension) => extension.trim())
+    .filter(Boolean)
+  const lower = command.toLowerCase()
+  return configured.some((extension) => lower.endsWith(extension.toLowerCase()))
+    ? [""]
+    : configured
 }
 
 function defaultCommandAvailable(command: string): boolean {
