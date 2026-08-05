@@ -75,7 +75,14 @@ try {
 
 async function run(command, args, cwd) {
   try {
-    return await execFileAsync(command, args, { cwd, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })
+    return await execFileAsync(command, args, {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+      // Windows exposes npm and installed package bins as .cmd shims. All
+      // values passed here are verifier-owned paths and fixed arguments.
+      shell: process.platform === "win32",
+    })
   } catch (error) {
     const stdout = typeof error?.stdout === "string" ? error.stdout : ""
     const stderr = typeof error?.stderr === "string" ? error.stderr : ""
