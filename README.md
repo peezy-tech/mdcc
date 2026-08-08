@@ -81,10 +81,25 @@ Render, inspect, or check the result:
 mdcsp list profiles
 mdcsp list snippets
 mdcsp explain default
+mdcsp profile show default
+mdcsp profile add default jaeger
+mdcsp profile remove default jaeger
 mdcsp render default --stdout
 mdcsp render default --target ~/.codex/AGENTS.md
 mdcsp check default --target ~/.codex/AGENTS.md
 ```
+
+`profile add` and `profile remove` update the profile atomically and immediately
+regenerate the default `~/.codex/AGENTS.md` target. Pass `--target FILE` to
+choose another generated file. The profile name may be omitted to use `default`:
+
+```bash
+mdcsp profile add jaeger --target ~/.codex/AGENTS.md
+mdcsp profile remove jaeger --target ~/.codex/AGENTS.md
+```
+
+`profile show` reports the ordered snippet membership without changing either
+file. Use `--json` with profile commands for machine-readable output.
 
 The default root is `$MDCSP_HOME`, then `$XDG_CONFIG_HOME/mdcsp`, then
 `~/.config/mdcsp`. The default profile is `default`, and the default output is

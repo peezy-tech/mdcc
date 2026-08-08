@@ -1,6 +1,6 @@
 {
   "name": "mdcsp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Compose Markdown context files from reusable, conditional snippets",
   "license": "MIT",
   "repository": {

@@ -1,7 +1,7 @@
 import { lstat, readFile, readdir, realpath } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { parse as parseToml } from "smol-toml"
+import { parse as parseToml, stringify as stringifyToml } from "smol-toml"
 
 const PROFILE_NAME = /^[a-z][a-z0-9_-]{0,63}$/
 const SNIPPET_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
@@ -10,6 +10,17 @@ export interface ProfilePaths {
   readonly root: string
   readonly profilePath: string
   readonly snippetPaths: readonly string[]
+}
+
+export interface ProfileDefinition {
+  readonly version?: 1
+  readonly name?: string
+  readonly snippets: readonly string[]
+}
+
+export interface LoadedProfile extends ProfilePaths {
+  readonly source: string
+  readonly definition: ProfileDefinition
 }
 
 export function defaultConfigRoot(env: NodeJS.ProcessEnv = process.env): string {
@@ -31,14 +42,29 @@ export async function loadProfile(
   name: string,
   explicitProfile?: string,
 ): Promise<ProfilePaths> {
+  const profile = await loadProfileDocument(root, name, explicitProfile)
+  return {
+    root: profile.root,
+    profilePath: profile.profilePath,
+    snippetPaths: profile.snippetPaths,
+  }
+}
+
+export async function loadProfileDocument(
+  root: string,
+  name: string,
+  explicitProfile?: string,
+): Promise<LoadedProfile> {
   validateProfileName(name)
   const resolvedRoot = path.resolve(root)
   const profilePath = path.resolve(
     explicitProfile ?? path.join(resolvedRoot, "profiles", `${name}.toml`),
   )
   let value: unknown
+  let source: string
   try {
-    value = parseToml(await readFile(profilePath, "utf8"))
+    source = await readFile(profilePath, "utf8")
+    value = parseToml(source)
   } catch (error) {
     if (hasCode(error, "ENOENT")) throw new Error(`Profile not found: ${profilePath}`)
     throw new Error(`Could not parse profile ${profilePath}`, { cause: error })
@@ -48,6 +74,9 @@ export async function loadProfile(
   if (profile.version !== undefined && profile.version !== 1) {
     throw new Error(`Profile version must be 1: ${profilePath}`)
   }
+  if (profile.name !== undefined && typeof profile.name !== "string") {
+    throw new Error(`Profile name must be a string: ${profilePath}`)
+  }
   if (profile.name !== undefined && profile.name !== name) {
     throw new Error(`Profile name must be ${name}: ${profilePath}`)
   }
@@ -55,13 +84,23 @@ export async function loadProfile(
     throw new Error(`Profile snippets must be an array of names: ${profilePath}`)
   }
   const names = profile.snippets as string[]
-  if (new Set(names).size !== names.length) throw new Error(`Profile contains a duplicate snippet: ${profilePath}`)
+  validateSnippetNames(names, `profile ${profilePath}`)
+  const definition: ProfileDefinition = {
+    ...(profile.version === undefined ? {} : { version: 1 as const }),
+    ...(profile.name === undefined ? {} : { name: profile.name }),
+    snippets: names,
+  }
+  const snippetPaths = await resolveSnippetPaths(resolvedRoot, names)
+  return { root: resolvedRoot, profilePath, snippetPaths, source, definition }
+}
+
+export async function resolveSnippetPaths(root: string, snippets: readonly string[]): Promise<readonly string[]> {
+  const resolvedRoot = path.resolve(root)
+  validateSnippetNames(snippets, "profile snippets")
   const snippetRoot = path.join(resolvedRoot, "snippets")
   const snippetPaths: string[] = []
-  for (const snippet of names) {
-    if (!SNIPPET_NAME.test(snippet) || snippet.endsWith(".md")) {
-      throw new Error(`Invalid snippet name: ${snippet}`)
-    }
+  let realRoot: string | undefined
+  for (const snippet of snippets) {
     const candidate = path.join(snippetRoot, `${snippet}.md`)
     let resolved: string
     try {
@@ -72,19 +111,33 @@ export async function loadProfile(
       if (hasCode(error, "ENOENT")) throw new Error(`Snippet not found: ${candidate}`)
       throw error
     }
-    const realRoot = await realpath(snippetRoot)
+    realRoot ??= await realpath(snippetRoot)
     const relation = path.relative(realRoot, resolved)
     if (relation.startsWith("..") || path.isAbsolute(relation)) {
       throw new Error(`Snippet resolves outside the snippet directory: ${snippet}`)
     }
     snippetPaths.push(resolved)
   }
-  return { root: resolvedRoot, profilePath, snippetPaths }
+  return snippetPaths
+}
+
+export function serializeProfile(definition: ProfileDefinition): string {
+  return stringifyToml({
+    ...(definition.version === undefined ? {} : { version: definition.version }),
+    ...(definition.name === undefined ? {} : { name: definition.name }),
+    snippets: [...definition.snippets],
+  })
 }
 
 export function validateProfileName(name: string): void {
   if (!PROFILE_NAME.test(name)) {
     throw new Error("Profile name must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, or underscores")
+  }
+}
+
+export function validateSnippetName(name: string): void {
+  if (!SNIPPET_NAME.test(name) || name.endsWith(".md")) {
+    throw new Error(`Invalid snippet name: ${name}`)
   }
 }
 
@@ -123,4 +176,9 @@ function rejectUnknown(value: Record<string, unknown>, allowed: readonly string[
 
 function hasCode(error: unknown, code: string): boolean {
   return Boolean(error && typeof error === "object" && "code" in error && error.code === code)
+}
+
+function validateSnippetNames(snippets: readonly string[], label: string): void {
+  if (new Set(snippets).size !== snippets.length) throw new Error(`${label} contains a duplicate snippet`)
+  for (const snippet of snippets) validateSnippetName(snippet)
 }

@@ -18,7 +18,13 @@ export {
   listProfiles,
   listSnippets,
   loadProfile,
+  loadProfileDocument,
+  resolveSnippetPaths,
+  serializeProfile,
   validateProfileName,
+  validateSnippetName,
+  type LoadedProfile,
+  type ProfileDefinition,
   type ProfilePaths,
 } from "./profile.js"
 export { outputIsCurrent, writeOutput } from "./output.js"

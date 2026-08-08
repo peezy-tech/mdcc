@@ -50,3 +50,88 @@ test("CLI reports usage errors with exit code 2", async () => {
     ),
   )
 })
+
+test("CLI profile commands update membership and render automatically", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "mdcsp-cli-profile-"))
+  try {
+    await mkdir(path.join(root, "profiles"), { recursive: true })
+    await mkdir(path.join(root, "snippets"), { recursive: true })
+    await writeFile(path.join(root, "profiles", "default.toml"), 'version = 1\nname = "default"\nsnippets = ["common"]\n')
+    await writeFile(path.join(root, "snippets", "common.md"), "# Common\n")
+    await writeFile(path.join(root, "snippets", "extra.md"), "# Extra\n")
+    const target = path.join(root, "AGENTS.md")
+    const env = { ...process.env, PATH: "" }
+
+    const shown = await execFileAsync(process.execPath, [cli, "profile", "show", "default", "--root", root, "--json"], { env })
+    assert.deepEqual(JSON.parse(shown.stdout), {
+      profile: "default",
+      profilePath: path.join(root, "profiles", "default.toml"),
+      snippets: ["common"],
+    })
+
+    const added = await execFileAsync(process.execPath, [
+      cli,
+      "profile",
+      "add",
+      "default",
+      "extra",
+      "--root",
+      root,
+      "--target",
+      target,
+      "--json",
+    ], { env })
+    const addedValue = JSON.parse(added.stdout)
+    assert.equal(addedValue.action, "added")
+    assert.deepEqual(addedValue.snippets, ["common", "extra"])
+    assert.match(await readFile(path.join(root, "profiles", "default.toml"), "utf8"), /snippets = \[ "common", "extra" \]/)
+    const afterAdd = await readFile(target, "utf8")
+    assert.match(afterAdd, /# Common/)
+    assert.match(afterAdd, /# Extra/)
+
+    const removed = await execFileAsync(process.execPath, [
+      cli,
+      "profile",
+      "remove",
+      "default",
+      "common",
+      "--root",
+      root,
+      "--target",
+      target,
+      "--json",
+    ], { env })
+    const removedValue = JSON.parse(removed.stdout)
+    assert.equal(removedValue.action, "removed")
+    assert.deepEqual(removedValue.snippets, ["extra"])
+    assert.match(await readFile(path.join(root, "profiles", "default.toml"), "utf8"), /snippets = \[ "extra" \]/)
+    const afterRemove = await readFile(target, "utf8")
+    assert.doesNotMatch(afterRemove, /# Common/)
+    assert.match(afterRemove, /# Extra/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test("CLI profile mutation rolls back when the generated target cannot be written", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "mdcsp-cli-profile-rollback-"))
+  try {
+    await mkdir(path.join(root, "profiles"), { recursive: true })
+    await mkdir(path.join(root, "snippets"), { recursive: true })
+    const profilePath = path.join(root, "profiles", "default.toml")
+    const original = 'version = 1\nname = "default"\nsnippets = ["common"]\n'
+    await writeFile(profilePath, original)
+    await writeFile(path.join(root, "snippets", "common.md"), "# Common\n")
+    await writeFile(path.join(root, "snippets", "extra.md"), "# Extra\n")
+    const target = path.join(root, "AGENTS.md")
+    await mkdir(target)
+
+    await assert.rejects(
+      execFileAsync(process.execPath, [cli, "profile", "add", "default", "extra", "--root", root, "--target", target]),
+      /Output target must be a regular file/,
+    )
+    assert.equal(await readFile(profilePath, "utf8"), original)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
